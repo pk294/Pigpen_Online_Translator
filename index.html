@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pigpen Cipher Translator</title>
+<style>
+:root{--blue:#2563eb;--ink:#111827;--muted:#64748b;--line:#cbd5e1;--bg:#f1f5f9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Arial,sans-serif}.wrap{max-width:1100px;margin:auto;padding:24px}.card{background:#fff;border-radius:18px;padding:24px;box-shadow:0 12px 35px #0f172a1a}h1{margin:0 0 6px}.lead{color:var(--muted);margin:0 0 20px}.tabs{display:flex;gap:8px;margin-bottom:18px}.tabs button,.actions button,.keys button{border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer}.tabs button{padding:10px 18px;font-weight:700}.tabs .active{background:var(--blue);color:#fff;border-color:var(--blue)}label{display:block;font-weight:700;margin:12px 0 7px}textarea{width:100%;min-height:95px;border:1px solid var(--line);border-radius:10px;padding:12px;font:17px Arial;resize:vertical}.actions{display:flex;flex-wrap:wrap;gap:9px;margin:12px 0}.actions button{padding:10px 14px;font-weight:700}.primary{background:var(--blue)!important;color:#fff;border-color:var(--blue)!important}.visual{min-height:118px;border:2px dashed var(--line);border-radius:12px;padding:15px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}.glyph{width:60px;height:60px}.gap{width:28px}.share{font:26px/1.7 "DejaVu Sans","Segoe UI Symbol",sans-serif;letter-spacing:5px;word-break:break-word;background:#f8fafc}.keys{display:grid;grid-template-columns:repeat(13,1fr);gap:7px;margin-top:14px}.keys button{height:40px;font-weight:700}.notice{font-size:13px;color:var(--muted);background:#eff6ff;padding:10px;border-radius:8px}.hidden{display:none}.status{min-height:20px;color:#166534;font-weight:700;font-size:14px}.decoded{font-size:24px;min-height:70px;border:1px solid var(--line);border-radius:10px;padding:14px;background:#f8fafc;white-space:pre-wrap}.chart{display:grid;grid-template-columns:repeat(13,1fr);gap:7px;margin-top:22px}.item{text-align:center;border:1px solid #e2e8f0;border-radius:9px;padding:5px}.item svg{width:48px;height:48px}.item b{display:block}@media(max-width:760px){.keys,.chart{grid-template-columns:repeat(7,1fr)}.card{padding:17px}.wrap{padding:10px}}
+</style></head>
+<body><main class="wrap"><section class="card">
+<h1>Pigpen Cipher Translator</h1><p class="lead">Translate English into the exact chart shapes, then copy a chat-safe cipher. The recipient can paste the cipher here to recover the letters.</p>
+<div class="tabs"><button id="encTab" class="active">English → Pigpen</button><button id="decTab">Pigpen → English</button></div>
+<section id="encoder">
+<label for="plain">English text</label><textarea id="plain" placeholder="Type a message, for example: HELLO"></textarea>
+<div class="keys" id="keys"></div>
+<label>Exact visual shapes</label><div class="visual" id="visual"></div>
+<label for="share">Chat-safe cipher</label><textarea id="share" class="share" readonly></textarea>
+<div class="actions"><button class="primary" id="copy">Copy cipher for chat</button><button id="back">Backspace</button><button id="space">Space</button><button id="clear">Clear</button></div><div class="status" id="status"></div>
+<p class="notice"><b>Why there are two outputs:</b> exact angled shapes require SVG and cannot be pasted as normal text in every chat app. The chat-safe cipher uses copyable Unicode equivalents. Its spaces and dotted markers are understood by this translator, so the recipient can paste it into the decoder.</p>
+</section>
+<section id="decoder" class="hidden">
+<label for="cipher">Paste the chat-safe cipher</label><textarea id="cipher" class="share" placeholder="Paste the copied cipher here"></textarea>
+<div class="actions"><button class="primary" id="decode">Decode</button><button id="paste">Paste from clipboard</button><button id="decClear">Clear</button></div>
+<label>Decoded English</label><div class="decoded" id="decoded"></div><div class="status" id="decStatus"></div>
+</section>
+<div class="chart" id="chart"></div>
+</section></main>
+<script>
+const NS='http://www.w3.org/2000/svg';
+const edges={A:'RB',B:'LRB',C:'LB',D:'TRB',E:'TRBL',F:'TLB',G:'TR',H:'TLR',I:'TL'};
+// Copyable tokens. A middle dot after a base token means its dotted version.
+const baseTokens={A:'└',B:'┴',C:'┘',D:'├',E:'┼',F:'┤',G:'┌',H:'┬',I:'┐',S:'▽',T:'◁',U:'△',V:'▷'};
+const token={};
+'ABCDEFGHI'.split('').forEach((x,i)=>{token[x]=baseTokens[x];token[String.fromCharCode(74+i)]=baseTokens[x]+'·'});
+['S','T','U','V'].forEach((x,i)=>{token[x]=baseTokens[x];token[String.fromCharCode(87+i)]=baseTokens[x]+'·'});
+const reverse=Object.fromEntries(Object.entries(token).map(([k,v])=>[v,k]));
+function ln(s,x1,y1,x2,y2){let e=document.createElementNS(NS,'line');for(const [k,v] of Object.entries({x1,y1,x2,y2}))e.setAttribute(k,v);e.setAttribute('stroke','#000');e.setAttribute('stroke-width','3');e.setAttribute('stroke-linecap','square');s.append(e)}
+function dt(s,x,y){let e=document.createElementNS(NS,'circle');e.setAttribute('cx',x);e.setAttribute('cy',y);e.setAttribute('r','3');s.append(e)}
+function glyph(ch){let s=document.createElementNS(NS,'svg');s.setAttribute('viewBox','0 0 64 64');s.classList.add('glyph');let n=ch.charCodeAt()-65;if(n<18){let b=String.fromCharCode(65+n%9),e=edges[b];if(e.includes('T'))ln(s,14,14,50,14);if(e.includes('R'))ln(s,50,14,50,50);if(e.includes('B'))ln(s,14,50,50,50);if(e.includes('L'))ln(s,14,14,14,50);if(n>=9)dt(s,32,32)}else{let q=(n-18)%4;if(q===0){ln(s,10,12,32,32);ln(s,54,12,32,32)}if(q===1){ln(s,52,10,32,32);ln(s,52,54,32,32)}if(q===2){ln(s,10,52,32,32);ln(s,54,52,32,32)}if(q===3){ln(s,12,10,32,32);ln(s,12,54,32,32)}if(n>=22){let pos=[[32,19],[45,32],[32,45],[19,32]][q];dt(s,...pos)}}return s}
+const plain=document.querySelector('#plain'),visual=document.querySelector('#visual'),share=document.querySelector('#share');
+function encode(){plain.value=plain.value.toUpperCase().replace(/[^A-Z ]/g,'');visual.replaceChildren();let words=plain.value.trim().split(/ +/).filter(Boolean);share.value=words.map(w=>[...w].map(c=>token[c]).join(' ')).join('  /  ');[...plain.value].forEach(c=>{if(c===' '){let g=document.createElement('span');g.className='gap';visual.append(g)}else visual.append(glyph(c))})}
+'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(c=>{let b=document.createElement('button');b.textContent=c;b.onclick=()=>{plain.value+=c;encode()};keys.append(b);let it=document.createElement('div');it.className='item';it.append(glyph(c));let t=document.createElement('b');t.textContent=c;it.append(t);chart.append(it)});plain.oninput=encode;
+back.onclick=()=>{plain.value=plain.value.slice(0,-1);encode()};space.onclick=()=>{plain.value+=' ';encode()};clear.onclick=()=>{plain.value='';encode()};copy.onclick=async()=>{try{await navigator.clipboard.writeText(share.value);status.textContent='Cipher copied. Send it in chat with the translator link.'}catch{share.select();document.execCommand('copy');status.textContent='Cipher copied.'}};
+function doDecode(){let src=cipher.value.trim();if(!src){decoded.textContent='';return}let words=src.split(/\s*\/\s*/);let bad=[];let out=words.map(w=>{let parts=w.trim().split(/\s+/).filter(Boolean),letters=[];for(let i=0;i<parts.length;i++){let p=parts[i];if(p==='·'&&letters.length){continue}if(reverse[p])letters.push(reverse[p]);else{bad.push(p);letters.push('?')}}return letters.join('')}).join(' ');decoded.textContent=out;decStatus.textContent=bad.length?'Unrecognized symbol: '+[...new Set(bad)].join(', '):'Decoded successfully.'}
+decode.onclick=doDecode;cipher.oninput=doDecode;paste.onclick=async()=>{try{cipher.value=await navigator.clipboard.readText();doDecode()}catch{decStatus.textContent='Clipboard access was blocked. Paste manually.'}};decClear.onclick=()=>{cipher.value='';decoded.textContent='';decStatus.textContent=''};
+function tab(dec){encoder.classList.toggle('hidden',dec);decoder.classList.toggle('hidden',!dec);encTab.classList.toggle('active',!dec);decTab.classList.toggle('active',dec)}encTab.onclick=()=>tab(false);decTab.onclick=()=>tab(true);encode();
+</script></body></html>
